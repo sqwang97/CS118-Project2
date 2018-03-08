@@ -50,7 +50,9 @@ struct window {
 
     bool operator<(const window& w2) const
 	{
-		if (seqnum > w2.seqnum || w2.seqnum - seqnum > WINDOWSIZE + BUFF_SIZE) return true;
+		//printf("1st seq is %d, 2nd seq is %d\n", seqnum, w2.seqnum);
+		if (seqnum > w2.seqnum && seqnum - w2.seqnum < WINDOWSIZE + BUFF_SIZE) return true;
+		if (seqnum < w2.seqnum && seqnum - w2.seqnum > WINDOWSIZE + BUFF_SIZE) return true;
 		return false;
 	}
 
