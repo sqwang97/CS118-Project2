@@ -23,7 +23,6 @@
 #include <fstream>
 
 #include "packet.h"
-#include "buffer.h"
 
 const short SYN_Seq = 0;
 
@@ -48,13 +47,15 @@ struct window {
 
     window() {}
 
+    //return true, put w2 in front of w1, pkt with larger seq number < pkt with smaller seq number 
     bool operator<(const window& w2) const
-	{
-		//printf("1st seq is %d, 2nd seq is %d\n", seqnum, w2.seqnum);
-		if (seqnum > w2.seqnum && seqnum - w2.seqnum < WINDOWSIZE + BUFF_SIZE) return true;
-		if (seqnum < w2.seqnum && seqnum - w2.seqnum > WINDOWSIZE + BUFF_SIZE) return true;
-		return false;
-	}
+    {
+        // regular pkt
+        if (seqnum > w2.seqnum && seqnum - w2.seqnum < WINDOWSIZE + BUFF_SIZE) return true;
+        // wrap around pkt
+        if (seqnum < w2.seqnum && w2.seqnum - seqnum > WINDOWSIZE + BUFF_SIZE) return true;
+        return false;
+    }
 
     short seqnum;
     unsigned long offset;

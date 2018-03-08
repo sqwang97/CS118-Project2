@@ -109,8 +109,8 @@ struct window {
 	{
 
 		if (seqnum > w2.seqnum && seqnum - w2.seqnum < WINDOWSIZE + BUFF_SIZE) return true;
-        if (seqnum < w2.seqnum && seqnum - w2.seqnum > WINDOWSIZE + BUFF_SIZE) return true;
-		return false;
+        if (seqnum < w2.seqnum && w2.seqnum - seqnum > WINDOWSIZE + BUFF_SIZE) return true;
+        return false;
 	}
 
     short seqnum;

@@ -7,7 +7,7 @@
 all: server client
 
 server: server.cpp packet.h packet.cpp buffer.h buffer.cpp
-	g++ -std=c++11 -Wall -Wextra server.cpp packet.cpp buffer.cpp -o server
+	g++ -std=c++11 -Wall -Wextra server.cpp packet.cpp -o server
 
 client: client.cpp packet.h packet.cpp buffer.h buffer.cpp
 	g++ -std=c++11 -Wall -Wextra client.cpp packet.cpp buffer.cpp -o client
