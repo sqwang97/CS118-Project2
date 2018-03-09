@@ -26,7 +26,6 @@
 #include <fstream>
 
 #include "packet.h"
-#include "buffer.h"
 
 const short SYN_Seq = 0;
 
@@ -40,6 +39,9 @@ short Max_seq = 0;
 short Pre_seq = 0;
 short seq_window_head = 0;
 
+//declaration
+void send_regular_packet(short seqnum, unsigned long offset, int payload, struct sockaddr_in src_addr, socklen_t addrlen);
+
 ///////////////////////////////////////
 //timer design for each packet
 struct my_timer {
@@ -50,11 +52,19 @@ struct my_timer {
     struct sockaddr_in src_addr;
     socklen_t addrlen;
 
-    my_timer(seq, off, pay, src, len): seqnum(seq), offset(off), payload(pay), src_addr(src), addrlen(len) {}
+    my_timer() {}
+    my_timer(short seq, unsigned long off, int pay, struct sockaddr_in src, socklen_t len): seqnum(seq), offset(off), payload(pay), src_addr(src), addrlen(len) {}
 };
 
+//handling the signal, retransmission
+static void timer_handler(int sig, siginfo_t *si, void *uc) {
+    struct my_timer *timer_data = (my_timer*)si->si_value.sival_ptr;
+    send_regular_packet(timer_data->seqnum, timer_data->offset, timer_data->payload, timer_data->src_addr, timer_data->addrlen);
+    timer_delete(timer_data->id);
+}
+
 //create our own timer
-static int makeTimer(struct my_timer *timer_data, unsigned msec) {
+static void makeTimer(struct my_timer *timer_data, unsigned msec) {
     struct sigevent         te;
     struct itimerspec       its;
     struct sigaction        sa;
@@ -66,8 +76,8 @@ static int makeTimer(struct my_timer *timer_data, unsigned msec) {
     sigemptyset(&sa.sa_mask);
     if (sigaction(sigNo, &sa, NULL) == -1)
     {
-        fprintf(stderr, "%s: Failed to setup signal handling for %s.\n", PROG, name);
-        return(-1);
+        fprintf(stderr, "Failed to setup signal handling.\n");
+        return;
     }
 
     /* Set and enable alarm */
@@ -81,13 +91,6 @@ static int makeTimer(struct my_timer *timer_data, unsigned msec) {
     its.it_value.tv_sec = 0;
     its.it_value.tv_nsec = msec * 1000000;
     timer_settime(timer_data->id, 0, &its, NULL);
-}
-
-//handling the signal, retransmission
-static void timer_handler(int sig, siginfo_ *si, void *uc) {
-    struct my_timer *timer_data = si->si_value.sival_ptr;
-    send_regular_packet(timer_data->seqnum, timer_data->offset, timer_data->payload, timer_data->src_addr, timer_data->addrlen);
-    timer_delete(timer_data->id);
 }
 
 std::unordered_map<short, struct my_timer> pkt_timer;

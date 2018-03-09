@@ -49,15 +49,6 @@ bool Buffer::push_in_pkt(short seqnum, std::string pkt){
 	return true;
 }
 
-std::string Buffer::get_pkt(short seqnum){
-	std::string result;
-	std::list<struct pkt>::iterator it;
-	it = find_seq(seqnum);
-	if (it != pkt_buffer.end())
-		return it->pkt;
-	return "";
-}
-
 std::string Buffer::drop_packet(){
 	std::string result;
 	std::list<struct pkt>::iterator it;
@@ -78,14 +69,6 @@ std::string Buffer::drop_packet(){
 		return result;
 	}
 	return "";
-}
-
-void Buffer::drop_packet(short seqnum){
-	std::string result;
-	std::list<struct pkt>::iterator it;
-	it = find_seq(seqnum);
-	if (it != pkt_buffer.end())
-		pkt_buffer.erase(it);
 }
 
 std::list<struct Buffer::pkt>::iterator Buffer::find_seq(short A){

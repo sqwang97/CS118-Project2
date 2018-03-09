@@ -6,11 +6,14 @@
 
 all: server client
 
-server: server.cpp packet.h packet.cpp buffer.h buffer.cpp
-	g++ -std=c++11 -Wall -Wextra server.cpp packet.cpp -o server
+server: server.cpp packet.h packet.cpp
+	g++ -std=c++11 -Wall -Wextra -static-libstdc++ server.cpp packet.cpp -o server
+
+server_timer: server_timer.cpp packet.h packet.cpp
+	g++ -std=c++11 -Wall -Wextra -lrt -static-libstdc++ server_timer.cpp packet.cpp -o server
 
 client: client.cpp packet.h packet.cpp buffer.h buffer.cpp
-	g++ -std=c++11 -Wall -Wextra client.cpp packet.cpp buffer.cpp -o client
+	g++ -std=c++11 -Wall -Wextra -static-libstdc++ client.cpp packet.cpp buffer.cpp -o client
 
 test: packet.h packet.cpp buffer.h buffer.cpp test1.cpp
 	g++ -std=c++11 -Wall -Wextra test1.cpp packet.cpp buffer.cpp -o test
