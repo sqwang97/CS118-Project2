@@ -177,6 +177,7 @@ void process_regular_ack(Packet& pkt, struct sockaddr_in src_addr, socklen_t add
         if(!ackbuf.empty())  //check out of order buffer, one at a time
         {
             std::unordered_set<short>::iterator it;
+	    seq_window_head = current_window.top().seqnum;
             it = ackbuf.find(seq_window_head);
             if (it != ackbuf.end())  //We have buffered this ACK before, so we want to go for next
             {
