@@ -40,27 +40,48 @@ short Pre_seq = 0;
 short seq_window_head = 0;
 
 //declaration
-void send_regular_packet(short seqnum, unsigned long offset, int payload, struct sockaddr_in src_addr, socklen_t addrlen);
+void printmessage(std::string action, std::string state, short num);
 
 ///////////////////////////////////////
 //timer design for each packet
 struct my_timer {
     timer_t id;
     short seqnum;
-    unsigned long offset;
-    int payload;
     struct sockaddr_in src_addr;
     socklen_t addrlen;
+    Packet pkt;
 
     my_timer() {}
-    my_timer(short seq, unsigned long off, int pay, struct sockaddr_in src, socklen_t len): seqnum(seq), offset(off), payload(pay), src_addr(src), addrlen(len) {}
+    my_timer(short seq, Packet mpkt, struct sockaddr_in src, socklen_t len): seqnum(seq), pkt(mpkt), src_addr(src), addrlen(len) {}
 };
+
+std::unordered_map<short, struct my_timer> pkt_timer;
 
 //handling the signal, retransmission
 static void timer_handler(int sig, siginfo_t *si, void *uc) {
     struct my_timer *timer_data = (my_timer*)si->si_value.sival_ptr;
-    send_regular_packet(timer_data->seqnum, timer_data->offset, timer_data->payload, timer_data->src_addr, timer_data->addrlen);
+
+    //retransmission data
+    short seqnum = timer_data->seqnum;
+    Packet pkt = timer_data->pkt;
+    std::buffer = pkt.packet_to_string();
+    struct sockaddr_in src_addr = timer_data->src_addr;
+    socklen_t addrlen = timer_data->addrlen;
+    sendto(sockfd, buffer.c_str(), buffer.length(), 0, (struct sockaddr*)&src_addr, addrlen);
+    if (pkt.getSYNbit())
+        printmessage("send", "Retransmission SYN", seqnum);
+    else if (pkt.getFINbit())
+        printmessage("send", "Retransmission FIN", seqnum);
+    else
+        printmessage("send", "Retransmission", seqnum);
+
+    //delete current timer    
     timer_delete(timer_data->id);
+
+    //set the timer, and add it to the list
+    my_timer cur_timer(seqnum, src_addr, addrlen, pkt);
+    makeTimer(&cur_timer, TIMEOUT);
+    pkt_timer[seqnum] = cur_timer;
 }
 
 //create our own timer
@@ -93,7 +114,7 @@ static void makeTimer(struct my_timer *timer_data, unsigned msec) {
     timer_settime(timer_data->id, 0, &its, NULL);
 }
 
-std::unordered_map<short, struct my_timer> pkt_timer;
+
 
 ///////////////////////////////////////
 
@@ -196,8 +217,8 @@ void send_regular_packet(short seqnum, unsigned long offset, int payload, struct
     //updateMaxSeq( (pkt.getSEQ() + BUFF_SIZE) % BUFF_SIZE);
 
     //set the timer, and add it to the list
-    my_timer cur_timer(seqnum, offset, payload, src_addr, addrlen);
-    makeTimer(&cur_timer, 500);
+    my_timer cur_timer(seqnum, src_addr, addrlen, response);
+    makeTimer(&cur_timer, TIMEOUT);
     pkt_timer[seqnum] = cur_timer;
 }
 
@@ -216,6 +237,12 @@ void process_regular_ack(Packet& pkt, struct sockaddr_in src_addr, socklen_t add
             buffer = response.packet_to_string();
             buff_size = buffer.length();
             sendto(sockfd, buffer.c_str(), buff_size, 0, (struct sockaddr*)&src_addr, addrlen);
+
+            //set the timer, and add it to the list
+            my_timer cur_timer(response.getSEQ(), src_addr, addrlen, response);
+            makeTimer(&cur_timer, TIMEOUT);
+            pkt_timer[response.getSEQ()] = cur_timer;
+
             printmessage("send", "FIN", response.getSEQ());
             Max_seq = (Max_seq + HEADER_SIZE) % MAXSEQNUM;
         }
@@ -260,13 +287,15 @@ void process_regular_ack(Packet& pkt, struct sockaddr_in src_addr, socklen_t add
 
 
 void process_packet (Packet& pkt, struct sockaddr_in src_addr, socklen_t addrlen){
+    //ignore duplicate packets
+    if (pkt.getACK() < Pre_seq || pkt.getACK() > Pre_seq + WINDOWSIZE) return;
+
     //delete the timer at receiving time
     std::unordered_map<short, struct my_timer>::iterator it = pkt_timer.find(pkt.getACK());
     if (it != pkt_timer.end()) {   //get the ACK, delete the timer
         timer_delete((it->second).id);
         pkt_timer.erase(it);
     }
-
 
     printmessage("receive", "", pkt.getACK() );
     Packet response;
@@ -282,6 +311,12 @@ void process_packet (Packet& pkt, struct sockaddr_in src_addr, socklen_t addrlen
         buffer = response.packet_to_string();
         buff_size = buffer.length();
         sendto(sockfd, buffer.c_str(), buff_size, 0, (struct sockaddr*)&src_addr, addrlen);
+
+        //set the timer, and add it to the list
+        my_timer cur_timer(response.getSEQ(), src_addr, addrlen, response);
+        makeTimer(&cur_timer, TIMEOUT);
+        pkt_timer[response.getSEQ()] = cur_timer;
+
         printmessage("send", "SYN", response.getSEQ());
         Max_seq = (Max_seq + HEADER_SIZE) % MAXSEQNUM;    //// do we need this? ////       
     }
@@ -351,6 +386,12 @@ void process_packet (Packet& pkt, struct sockaddr_in src_addr, socklen_t addrlen
                 buffer = response.packet_to_string();
                 buff_size = buffer.length();
                 sendto(sockfd, buffer.c_str(), buff_size, 0, (struct sockaddr*)&src_addr, addrlen);
+
+                //set the timer, and add it to the list
+                my_timer cur_timer(response.getSEQ(), src_addr, addrlen, response);
+                makeTimer(&cur_timer, TIMEOUT);
+                pkt_timer[response.getSEQ()] = cur_timer;
+
                 printmessage("send", "FIN", response.getSEQ());
                 Max_seq = (Max_seq + HEADER_SIZE) % MAXSEQNUM;
             }
@@ -428,7 +469,7 @@ int main(int argc, char *argv[])
     pfd[0].events = POLLIN;
     while(1)
     {
-        int ret = poll(pfd, 1, 0); //timeout is 500ms
+        int ret = poll(pfd, 1, 0); 
         if (ret > 0)
         {
 
