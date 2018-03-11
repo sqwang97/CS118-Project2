@@ -211,8 +211,10 @@ void process_packet (Packet& pkt){
             pkt_timer[seqnum] = my_timer(seqnum, response);
             makeTimer(&pkt_timer[seqnum], TIMEOUT);
             */
-
-            printmessage("send", "", response.getACK());
+            if (dup_flag) //We have received SYN before
+                printmessage("send", "Retransmission", response.getACK());
+            else
+                printmessage("send", "", response.getACK());
         }
     }
 
