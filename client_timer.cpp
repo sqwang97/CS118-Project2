@@ -64,7 +64,6 @@ static void timer_handler(int sig, siginfo_t *si, void *uc) {
     std::string buffer = pkt.packet_to_string();
 
     //2*RTO timeout for FIN
-    printf("the fin bit is %d\n", pkt.getFINbit());
     if (pkt.getFINbit())
     {
         close(sockfd);
