@@ -11,6 +11,8 @@
 #include <errno.h>
 #include <ctype.h>
 #include <algorithm>
+#include <time.h>
+#include <unordered_map>
 
 #include <iostream>
 #include <string>
@@ -59,7 +61,7 @@ static void timer_handler(int sig, siginfo_t *si, void *uc) {
     //retransmission data
     short seqnum = timer_data->seqnum;
     Packet pkt = timer_data->pkt;
-    std::buffer = pkt.packet_to_string();
+    std::string buffer = pkt.packet_to_string();
 
     //2*RTO timeout for FIN
     if (pkt.getFINbit())
@@ -72,7 +74,7 @@ static void timer_handler(int sig, siginfo_t *si, void *uc) {
 
     write(sockfd, buffer.c_str(), buffer.length());
     if (pkt.getSYNbit())
-        printmessage("send", "Retransmission SYN", seqnum);
+        printmessage("send", "Retransmission SYN");
     else
         printmessage("send", "Retransmission", seqnum);
 
@@ -126,9 +128,9 @@ action: "send" or "receive"
 state: use for sending, input can be "Retransmission" / "FIN" / "SYN" / ""
 num: seq or ack
 */
-void printmessage(std::string action, std::string state, short num){
+void printmessage(std::string action, std::string state, short num = -1){
     if (!action.compare("send")){
-        if (state == "SYN" || state == "Retransmission SYN")    //ACK ("Retransmission") ("FIN")
+        if (num >= 0)    //ACK ("Retransmission") ("FIN")
             printf("Sending packet %d %s\n", num, state.c_str());
         else    // num = -1, SYN
             printf("Sending packet %s\n", state.c_str());
@@ -316,7 +318,7 @@ int main(int argc, char *argv[])
     write(sockfd, syn_string.c_str(), syn_string.length());
 
     //set timer for SYN
-    my_timer cur_timer(seqnum, src_addr, addrlen, syn);
+    my_timer cur_timer(seqnum, syn);
     makeTimer(&cur_timer, TIMEOUT);
     pkt_timer[seqnum] = cur_timer;
 
