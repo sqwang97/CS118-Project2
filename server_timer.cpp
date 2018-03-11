@@ -65,7 +65,6 @@ static void timer_handler(int sig, siginfo_t *si, void *uc) {
     //retransmission data
     short seqnum = timer_data->seqnum;
     Packet pkt = timer_data->pkt;
-    printf("timeout %d\n", pkt.getSEQ());
     std::string buffer = pkt.packet_to_string();
     struct sockaddr_in src_addr = timer_data->src_addr;
     socklen_t addrlen = timer_data->addrlen;

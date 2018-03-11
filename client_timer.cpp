@@ -38,7 +38,7 @@ void error(char *msg)
 
 
 //declaration
-void printmessage(std::string action, std::string state, short num = -1);
+void printmessage(std::string action, std::string state, short num);
 static void makeTimer(struct my_timer *timer_data, unsigned msec);
 
 ///////////////////////////////////////
@@ -64,6 +64,7 @@ static void timer_handler(int sig, siginfo_t *si, void *uc) {
     std::string buffer = pkt.packet_to_string();
 
     //2*RTO timeout for FIN
+    printf("the fin bit is %d\n", pkt.getFINbit());
     if (pkt.getFINbit())
     {
         close(sockfd);
@@ -74,7 +75,7 @@ static void timer_handler(int sig, siginfo_t *si, void *uc) {
 
     write(sockfd, buffer.c_str(), buffer.length());
     if (pkt.getSYNbit())
-        printmessage("send", "Retransmission SYN");
+        printmessage("send", "Retransmission SYN", seqnum);
     else
         printmessage("send", "Retransmission", seqnum);
 
@@ -82,7 +83,7 @@ static void timer_handler(int sig, siginfo_t *si, void *uc) {
     timer_delete(timer_data->id);
 
     //set the timer, and add it to the list
-    pkt_timer[seqnum] = my_timer(seqnum, response);
+    pkt_timer[seqnum] = my_timer(seqnum, pkt);
     makeTimer(&pkt_timer[seqnum], TIMEOUT);
 }
 
@@ -127,9 +128,9 @@ action: "send" or "receive"
 state: use for sending, input can be "Retransmission" / "FIN" / "SYN" / ""
 num: seq or ack
 */
-void printmessage(std::string action, std::string state, short num = -1){
+void printmessage(std::string action, std::string state, short num){
     if (!action.compare("send")){
-        if (num >= 0)    //ACK ("Retransmission") ("FIN")
+        if (state != "SYN" && state != "Retransmission SYN")    //ACK ("Retransmission") ("FIN")
             printf("Sending packet %d %s\n", num, state.c_str());
         else    // num = -1, SYN
             printf("Sending packet %s\n", state.c_str());
@@ -220,7 +221,7 @@ void process_packet (Packet& pkt){
     //// close connection for 2RTO ////
     else if (pkt.getFINbit()){
         //ignore duplicate packets
-        if (dup_flag) return;
+        //if (dup_flag) return;
 
         response.setFINbit(true);
         response.setACK(pkt.getSEQ());
@@ -313,7 +314,7 @@ int main(int argc, char *argv[])
     syn.setSEQ(SYN_Seq);
     std::string syn_string = syn.packet_to_string();
     //write(STDOUT_FILENO, syn_string.c_str(). syn_string.size());
-    printmessage("send", "SYN");
+    printmessage("send", "SYN", syn.getSEQ());
     write(sockfd, syn_string.c_str(), syn_string.length());
 
     //set the timer, and add it to the list
