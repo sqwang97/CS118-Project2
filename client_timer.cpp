@@ -205,12 +205,11 @@ void process_packet (Packet& pkt){
             write(sockfd, buffer.c_str(), buff_size);
             dup_flag = true; //We have received SYN 
 
-            /*
             //set the timer, and add it to the list
             short seqnum = response.getSEQ();
             pkt_timer[seqnum] = my_timer(seqnum, response);
             makeTimer(&pkt_timer[seqnum], TIMEOUT);
-            */
+            
             if (dup_flag) //We have received SYN before
                 printmessage("send", "Retransmission", response.getACK());
             else
@@ -232,11 +231,12 @@ void process_packet (Packet& pkt){
         write(sockfd, buffer.c_str(), buff_size);
         dup_flag = true; //We have received FIN
         
+        /*
         //set the timer, and add it to the list
         short seqnum = response.getSEQ();
         pkt_timer[seqnum] = my_timer(seqnum, response);
         makeTimer(&pkt_timer[seqnum], 2*TIMEOUT);
-
+        */
 
         //If it is a 404 error, we print additional message
         if (pkt.getERRbit())
