@@ -190,7 +190,7 @@ void process_packet (Packet& pkt){
             pkt_timer.erase(it);
         }
         //ignore duplicate packets
-        if (dup_flag) return;
+        //if (dup_flag) return;
 
         if (pkt.getACK() == SYN_Seq){
             //set base seq for upcoming file pkts
