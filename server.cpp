@@ -172,7 +172,8 @@ void process_regular_ack(Packet& pkt, struct sockaddr_in src_addr, socklen_t add
             data_offset += rest_length;
             printmessage("send", "", Max_seq);
             Max_seq = (Max_seq + rest_length + HEADER_SIZE) % MAXSEQNUM;
-        }
+        } else 
+	    seq_window_head = current_window.top().seqnum;
 
         if(!ackbuf.empty())  //check out of order buffer, one at a time
         {
