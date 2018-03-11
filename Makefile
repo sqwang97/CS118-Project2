@@ -15,7 +15,7 @@ server_timer: server_timer.cpp packet.h packet.cpp
 client: client.cpp packet.h packet.cpp buffer.h buffer.cpp
 	g++ -std=c++11 -Wall -Wextra -static-libstdc++ client.cpp packet.cpp buffer.cpp -o client
 	
-client_timer: client_timer.cpp packet.h packet.cppbuffer.cpp
+client_timer: client_timer.cpp packet.h packet.cpp buffer.cpp
 	g++ -std=c++11 -Wall -Wextra -static-libstdc++ client_timer.cpp packet.cpp buffer.cpp -o client_timer -lrt
 
 test: packet.h packet.cpp buffer.h buffer.cpp test1.cpp
