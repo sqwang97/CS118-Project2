@@ -6,7 +6,7 @@
 
 Buffer::Buffer(int size){
 	buffer_size = size;
-	expected_seq = last_expected_to_drop_seq = -1;
+	expected_seq = last_expected_to_drop_seq = 0;
 }
 
 bool Buffer::isEmpty(){
@@ -17,20 +17,13 @@ void Buffer::setBaseSeq(short seqnum){
 	expected_seq = last_expected_to_drop_seq = seqnum;
 }
 
+//seq + windowsize - maxseq 
+//seq 
+
 bool Buffer::push_in_pkt(short seqnum, std::string pkt){
-	if (seqnum < expected_seq || seqnum - expected_seq > WINDOWSIZE + BUFF_SIZE){		//a retransmitted duplicate pkt     consider over flow
-		std::list<struct pkt>::iterator it;
-		it = find_seq(seqnum);
-		if (it != pkt_buffer.end()){		//for server put it in the back
-			pkt_buffer.erase(it);
-			struct pkt temp;
-			temp.seq = seqnum;
-			temp.pkt = pkt;
-			pkt_buffer.push_back(temp);
-		}
-		else
-			return false;					//for client just drop the duplicate and return false to notice
-	}
+	if ((seqnum < expected_seq && expected_seq - seqnum < WINDOWSIZE+ BUFF_SIZE)
+		|| (seqnum > expected_seq && seqnum - expected_seq  > WINDOWSIZE + BUFF_SIZE))//a retransmitted duplicate pkt, consider over flow
+		return false;					//for client just drop the duplicate and return false to notice
 	else if (seqnum == expected_seq){		//a delivered in order pkt
 		struct pkt temp;
 		temp.seq = seqnum;
@@ -43,8 +36,6 @@ bool Buffer::push_in_pkt(short seqnum, std::string pkt){
 		temp.seq = seqnum;
 		temp.pkt = pkt;
 		pkt_buffer.push_back(temp);
-		if ((int)pkt_buffer.size() > buffer_size)    //// need to see whether this part is correct ////
-			pkt_buffer.pop_front();
 	}
 	return true;
 }
