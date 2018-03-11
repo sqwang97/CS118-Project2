@@ -61,10 +61,19 @@ std::unordered_map<short, struct my_timer> pkt_timer;
 //handling the signal, retransmission
 static void timer_handler(int sig, siginfo_t *si, void *uc) {
     struct my_timer *timer_data = (my_timer*)si->si_value.sival_ptr;
+printf("timer size id %d\n", pkt_timer.size());
+std::unordered_map<short, struct my_timer>::iterator it = pkt_timer.begin();
+while (it != pkt_timer.end()){
+  printf("we have timer %d\n", (it->second).seqnum);
+  it++;
+
+
+
 
     //retransmission data
     short seqnum = timer_data->seqnum;
     Packet pkt = timer_data->pkt;
+    printf("timeout %d\n", pkt.getSEQ());
     std::string buffer = pkt.packet_to_string();
     struct sockaddr_in src_addr = timer_data->src_addr;
     socklen_t addrlen = timer_data->addrlen;
@@ -77,7 +86,7 @@ static void timer_handler(int sig, siginfo_t *si, void *uc) {
         printmessage("send", "Retransmission", seqnum);
 
     //delete current timer    
-    timer_delete(timer_data->id);
+    //timer_delete(timer_data->id);
 
     //set the timer, and add it to the list
     my_timer cur_timer(seqnum, pkt, src_addr, addrlen);
@@ -221,6 +230,7 @@ void send_regular_packet(short seqnum, unsigned long offset, int payload, struct
     my_timer cur_timer(seqnum, response, src_addr, addrlen);
     makeTimer(&cur_timer, TIMEOUT);
     pkt_timer[seqnum] = cur_timer;
+printf("current timer seq is %d\n", pkt_timer[seqnum].seqnum);
 }
 
 
@@ -263,7 +273,8 @@ void process_regular_ack(Packet& pkt, struct sockaddr_in src_addr, socklen_t add
             data_offset += rest_length;
             printmessage("send", "", Max_seq);
             Max_seq = (Max_seq + rest_length + HEADER_SIZE) % MAXSEQNUM;
-        }
+        } else
+	    seq_window_head = current_window.top().seqnum;
 
         if(!ackbuf.empty())  //check out of order buffer, one at a time
         {
@@ -289,9 +300,8 @@ void process_regular_ack(Packet& pkt, struct sockaddr_in src_addr, socklen_t add
 
 void process_packet (Packet& pkt, struct sockaddr_in src_addr, socklen_t addrlen){
     printmessage("receive", "", pkt.getACK() );
-    
     //ignore duplicate packets
-    if (pkt.getACK() < Pre_seq || pkt.getACK() > Pre_seq + WINDOWSIZE) return;
+    //if (pkt.getACK() < Pre_seq || pkt.getACK() > Pre_seq + WINDOWSIZE) return;
 
     //delete the timer at receiving time
     std::unordered_map<short, struct my_timer>::iterator it = pkt_timer.find(pkt.getACK());

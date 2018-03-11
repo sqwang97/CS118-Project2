@@ -74,7 +74,7 @@ static void timer_handler(int sig, siginfo_t *si, void *uc) {
 
     write(sockfd, buffer.c_str(), buffer.length());
     if (pkt.getSYNbit())
-        printmessage("send", "Retransmission SYN");
+        printmessage("send", "Retransmission SYN", seqnum);
     else
         printmessage("send", "Retransmission", seqnum);
 
@@ -128,9 +128,9 @@ action: "send" or "receive"
 state: use for sending, input can be "Retransmission" / "FIN" / "SYN" / ""
 num: seq or ack
 */
-void printmessage(std::string action, std::string state, short num = -1){
+void printmessage(std::string action, std::string state, short num){
     if (!action.compare("send")){
-        if (num >= 0)    //ACK ("Retransmission") ("FIN")
+        if (state != "SYN" && state != "Retransmission SYN")    //ACK ("Retransmission") ("FIN")
             printf("Sending packet %d %s\n", num, state.c_str());
         else    // num = -1, SYN
             printf("Sending packet %s\n", state.c_str());
@@ -314,13 +314,13 @@ int main(int argc, char *argv[])
     syn.setSEQ(SYN_Seq);
     std::string syn_string = syn.packet_to_string();
     //write(STDOUT_FILENO, syn_string.c_str(). syn_string.size());
-    printmessage("send", "SYN");
+    printmessage("send", "SYN", SYN_Seq);
     write(sockfd, syn_string.c_str(), syn_string.length());
 
     //set timer for SYN
-    my_timer cur_timer(seqnum, syn);
+    my_timer cur_timer(SYN_Seq, syn);
     makeTimer(&cur_timer, TIMEOUT);
-    pkt_timer[seqnum] = cur_timer;
+    pkt_timer[SYN_Seq] = cur_timer;
 
     while(1)
     {
