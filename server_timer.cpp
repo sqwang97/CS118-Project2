@@ -81,7 +81,7 @@ static void timer_handler(int sig, siginfo_t *si, void *uc) {
     //timer_delete(timer_data->id);
 
     //set the timer, and add it to the list
-    pkt_timer[seqnum] = my_timer(seqnum, response, src_addr, addrlen);
+    pkt_timer[seqnum] = my_timer(seqnum, pkt, src_addr, addrlen);
     makeTimer(&pkt_timer[seqnum], TIMEOUT);
 }
 
