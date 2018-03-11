@@ -41,7 +41,7 @@ short seq_window_head = 0;
 
 //declaration
 void printmessage(std::string action, std::string state, short num);
-static void makeTimer(struct my_timer *timer_data, unsigned msec;
+static void makeTimer(struct my_timer *timer_data, unsigned msec);
 
 ///////////////////////////////////////
 //timer design for each packet
@@ -65,7 +65,7 @@ static void timer_handler(int sig, siginfo_t *si, void *uc) {
     //retransmission data
     short seqnum = timer_data->seqnum;
     Packet pkt = timer_data->pkt;
-    std::buffer = pkt.packet_to_string();
+    std::string buffer = pkt.packet_to_string();
     struct sockaddr_in src_addr = timer_data->src_addr;
     socklen_t addrlen = timer_data->addrlen;
     sendto(sockfd, buffer.c_str(), buffer.length(), 0, (struct sockaddr*)&src_addr, addrlen);
