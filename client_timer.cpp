@@ -26,6 +26,7 @@ const short SYN_Seq = 0;
 Buffer pkt_buffer(WINDOWSIZE/BUFF_SIZE);
 std::string filename;
 int sockfd = -1;
+bool dup_flag = false;
 
 void error(char *msg)
 {
@@ -36,6 +37,7 @@ void error(char *msg)
 
 //declaration
 void printmessage(std::string action, std::string state, short num);
+static void makeTimer(struct my_timer *timer_data, unsigned msec);
 
 ///////////////////////////////////////
 //timer design for each packet
@@ -170,6 +172,16 @@ void process_regular_packet(Packet& pkt){
 
 void process_packet (Packet& pkt){
     printmessage("receive", "", pkt.getSEQ() );
+
+
+
+    //delete the timer at receiving time
+    std::unordered_map<short, struct my_timer>::iterator it = pkt_timer.find(pkt.getSEQ());
+    if (it != pkt_timer.end()) {   //get the ACK, delete the timer
+        timer_delete((it->second).id);
+        pkt_timer.erase(it);
+    }
+
     Packet response;
     std::string buffer;
     int buff_size;
@@ -178,16 +190,21 @@ void process_packet (Packet& pkt){
     //buffer this SeqNum
     //// need to buffer this packet, if lost, need timeout to retransmit ////
     if (pkt.getSYNbit()){
+        //ignore duplicate packets
+        if (dup_flag) return;
+
         if (pkt.getACK() == SYN_Seq){
             //set base seq for upcoming file pkts
             pkt_buffer.setBaseSeq(pkt.getSEQ()+ HEADER_SIZE);
 
             response.setACK(pkt.getSEQ());
+            response.setSEQ(HEADER_SIZE);
             response.setREQbit(true);
             response.fillin_content(filename);
             buffer = response.packet_to_string();
             buff_size = buffer.length();
             write(sockfd, buffer.c_str(), buff_size);
+            dup_flag = true; //We have received SYN 
 
             //set the timer, and add it to the list
             my_timer cur_timer(response.getSEQ(), pkt);
@@ -201,13 +218,17 @@ void process_packet (Packet& pkt){
     //receive FIN from server, send FIN and ACK to server
     //// close connection for 2RTO ////
     else if (pkt.getFINbit()){
+        //ignore duplicate packets
+        if (dup_flag) return;
+
         response.setFINbit(true);
         response.setACK(pkt.getSEQ());
-        response.setSEQ(0);
+        response.setSEQ(2*HEADER_SIZE);
         buffer = response.packet_to_string();
         buff_size = buffer.length();
         write(sockfd, buffer.c_str(), buff_size);
-
+        dup_flag = true; //We have received FIN
+        
         //set the timer, and add it to the list
         my_timer cur_timer(response.getSEQ(), pkt);
         makeTimer(&cur_timer, 2*TIMEOUT);
@@ -227,8 +248,10 @@ void process_packet (Packet& pkt){
         exit(1);
         //close connection
     }
-    else
+    else{
+        dup_flag = false;
         process_regular_packet(pkt);
+    }
 
 }
 

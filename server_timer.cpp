@@ -41,16 +41,17 @@ short seq_window_head = 0;
 
 //declaration
 void printmessage(std::string action, std::string state, short num);
+static void makeTimer(struct my_timer *timer_data, unsigned msec;
 
 ///////////////////////////////////////
 //timer design for each packet
 struct my_timer {
     timer_t id;
     short seqnum;
+    Packet pkt;
     struct sockaddr_in src_addr;
     socklen_t addrlen;
-    Packet pkt;
-
+    
     my_timer() {}
     my_timer(short seq, Packet mpkt, struct sockaddr_in src, socklen_t len): seqnum(seq), pkt(mpkt), src_addr(src), addrlen(len) {}
 };
@@ -79,7 +80,7 @@ static void timer_handler(int sig, siginfo_t *si, void *uc) {
     timer_delete(timer_data->id);
 
     //set the timer, and add it to the list
-    my_timer cur_timer(seqnum, src_addr, addrlen, pkt);
+    my_timer cur_timer(seqnum, pkt, src_addr, addrlen);
     makeTimer(&cur_timer, TIMEOUT);
     pkt_timer[seqnum] = cur_timer;
 }
@@ -217,7 +218,7 @@ void send_regular_packet(short seqnum, unsigned long offset, int payload, struct
     //updateMaxSeq( (pkt.getSEQ() + BUFF_SIZE) % BUFF_SIZE);
 
     //set the timer, and add it to the list
-    my_timer cur_timer(seqnum, src_addr, addrlen, response);
+    my_timer cur_timer(seqnum, response, src_addr, addrlen);
     makeTimer(&cur_timer, TIMEOUT);
     pkt_timer[seqnum] = cur_timer;
 }
@@ -239,7 +240,7 @@ void process_regular_ack(Packet& pkt, struct sockaddr_in src_addr, socklen_t add
             sendto(sockfd, buffer.c_str(), buff_size, 0, (struct sockaddr*)&src_addr, addrlen);
 
             //set the timer, and add it to the list
-            my_timer cur_timer(response.getSEQ(), src_addr, addrlen, response);
+            my_timer cur_timer(response.getSEQ(), response, src_addr, addrlen);
             makeTimer(&cur_timer, TIMEOUT);
             pkt_timer[response.getSEQ()] = cur_timer;
 
@@ -287,6 +288,8 @@ void process_regular_ack(Packet& pkt, struct sockaddr_in src_addr, socklen_t add
 
 
 void process_packet (Packet& pkt, struct sockaddr_in src_addr, socklen_t addrlen){
+    printmessage("receive", "", pkt.getACK() );
+    
     //ignore duplicate packets
     if (pkt.getACK() < Pre_seq || pkt.getACK() > Pre_seq + WINDOWSIZE) return;
 
@@ -297,7 +300,6 @@ void process_packet (Packet& pkt, struct sockaddr_in src_addr, socklen_t addrlen
         pkt_timer.erase(it);
     }
 
-    printmessage("receive", "", pkt.getACK() );
     Packet response;
     std::string buffer;
     int buff_size;
@@ -313,7 +315,7 @@ void process_packet (Packet& pkt, struct sockaddr_in src_addr, socklen_t addrlen
         sendto(sockfd, buffer.c_str(), buff_size, 0, (struct sockaddr*)&src_addr, addrlen);
 
         //set the timer, and add it to the list
-        my_timer cur_timer(response.getSEQ(), src_addr, addrlen, response);
+        my_timer cur_timer(response.getSEQ(), response, src_addr, addrlen);
         makeTimer(&cur_timer, TIMEOUT);
         pkt_timer[response.getSEQ()] = cur_timer;
 
@@ -388,7 +390,7 @@ void process_packet (Packet& pkt, struct sockaddr_in src_addr, socklen_t addrlen
                 sendto(sockfd, buffer.c_str(), buff_size, 0, (struct sockaddr*)&src_addr, addrlen);
 
                 //set the timer, and add it to the list
-                my_timer cur_timer(response.getSEQ(), src_addr, addrlen, response);
+                my_timer cur_timer(response.getSEQ(), response, src_addr, addrlen);
                 makeTimer(&cur_timer, TIMEOUT);
                 pkt_timer[response.getSEQ()] = cur_timer;
 
