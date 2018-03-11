@@ -175,14 +175,6 @@ void process_packet (Packet& pkt){
     printmessage("receive", "", pkt.getSEQ() );
 
 
-
-    //delete the timer at receiving time
-    std::unordered_map<short, struct my_timer>::iterator it = pkt_timer.find(pkt.getSEQ());
-    if (it != pkt_timer.end()) {   //get the ACK, delete the timer
-        timer_delete((it->second).id);
-        pkt_timer.erase(it);
-    }
-
     Packet response;
     std::string buffer;
     int buff_size;
@@ -191,6 +183,12 @@ void process_packet (Packet& pkt){
     //buffer this SeqNum
     //// need to buffer this packet, if lost, need timeout to retransmit ////
     if (pkt.getSYNbit()){
+        //delete the timer at receiving time
+        std::unordered_map<short, struct my_timer>::iterator it = pkt_timer.find(pkt.getSEQ());
+        if (it != pkt_timer.end()) {   //get the ACK, delete the timer
+            timer_delete((it->second).id);
+            pkt_timer.erase(it);
+        }
         //ignore duplicate packets
         if (dup_flag) return;
 
@@ -207,10 +205,12 @@ void process_packet (Packet& pkt){
             write(sockfd, buffer.c_str(), buff_size);
             dup_flag = true; //We have received SYN 
 
+            /*
             //set the timer, and add it to the list
             short seqnum = response.getSEQ();
             pkt_timer[seqnum] = my_timer(seqnum, response);
             makeTimer(&pkt_timer[seqnum], TIMEOUT);
+            */
 
             printmessage("send", "", response.getACK());
         }
