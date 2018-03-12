@@ -19,11 +19,16 @@ void Buffer::setBaseSeq(short seqnum){
 
 
 bool Buffer::push_in_pkt(short seqnum, std::string pkt){
+	printf("* * * * * * * * * Pushing into buffer\n");
 	if ((seqnum < expected_seq && expected_seq - seqnum < WINDOWSIZE+ BUFF_SIZE)
-		|| (seqnum > expected_seq && seqnum - expected_seq  > WINDOWSIZE + BUFF_SIZE))//a retransmitted duplicate pkt, consider over flow
+		|| (seqnum > expected_seq && seqnum - expected_seq  > WINDOWSIZE + BUFF_SIZE)){//a retransmitted duplicate pkt, consider over flow
+		printf("* * * * * * * * * Return false, reason 1\n");
 		return false;					//for client just drop the duplicate and return false to notice
-	else if (find_seq(seqnum) != pkt_buffer.end())	//duplicate pkt in buffer
+	}
+	else if (find_seq(seqnum) != pkt_buffer.end()){	//duplicate pkt in buffer
+		printf("* * * * * * * * * Return false, reason 1\n");
 		return false;
+	}
 	else if (seqnum == expected_seq){		//a delivered in order pkt
 		struct pkt temp;
 		temp.seq = seqnum;
@@ -37,6 +42,7 @@ bool Buffer::push_in_pkt(short seqnum, std::string pkt){
 		temp.pkt = pkt;
 		pkt_buffer.push_back(temp);
 	}
+	printf("* * * * * * * * * Return true\n");
 	return true;
 }
 
@@ -51,11 +57,11 @@ std::string Buffer::drop_packet(){
 		result = it->pkt;
 		pkt_buffer.erase(it);
 
-		/*
+		
 		it = find_seq(last_expected_to_drop_seq);
 		int is_erased = (it == pkt_buffer.end());
 		printf(">>>>>>>>Is erased????? %d\n", is_erased);
-		*/
+		
 
 		last_expected_to_drop_seq = (last_expected_to_drop_seq + result.length()) % MAXSEQNUM;
 		//set expected_seq if the droped packet is out of order
