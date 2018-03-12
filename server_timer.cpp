@@ -210,7 +210,7 @@ void send_regular_packet(short seqnum, unsigned long offset, int payload, struct
     response.fillin_content(file_data.substr(offset, payload));
     buffer = response.packet_to_string();
     buff_size = buffer.length();
-    printf("\n%s\n", buffer.c_str());
+    printf("\n%s\n", (file_data.substr(offset, payload)).c_str());
     sendto(sockfd, buffer.c_str(), buff_size, 0, (struct sockaddr*)&src_addr, addrlen);
     //data_offset += PAYLOADSIZE;
     //printmessage("send", "", response.getSEQ());
