@@ -55,8 +55,8 @@ std::string Buffer::drop_packet(){
 		if (expected_seq - last_expected_to_drop_seq > WINDOWSIZE + BUFF_SIZE || last_expected_to_drop_seq - expected_seq > WINDOWSIZE + BUFF_SIZE)  //consider overflow
         	expected_seq = std::min(expected_seq, last_expected_to_drop_seq);
     	else
-        	{expected_seq = std::max(expected_seq, last_expected_to_drop_seq); }
-		//printf("3: %d ----- %d\n", last_expected_to_drop_seq, expected_seq);
+        	expected_seq = std::max(expected_seq, last_expected_to_drop_seq);
+		printf("%d ----- %d\n", last_expected_to_drop_seq, expected_seq);
 		return result;
 	}
 	return "";
