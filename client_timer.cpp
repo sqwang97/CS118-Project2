@@ -113,8 +113,8 @@ static void makeTimer(struct my_timer *timer_data, unsigned msec) {
 
     its.it_interval.tv_sec = 0;
     its.it_interval.tv_nsec = 0;
-    its.it_value.tv_sec = 0;
-    its.it_value.tv_nsec = msec * 1000000;
+    its.it_value.tv_sec = msec/1000;
+    its.it_value.tv_nsec = (msec%1000) * 1000000;
     timer_settime(timer_data->id, 0, &its, NULL);
 }
 
@@ -132,12 +132,12 @@ num: seq or ack
 void printmessage(std::string action, std::string state, short num){
     if (!action.compare("send")){
         if (state != "SYN" && state != "Retransmission SYN")    //ACK ("Retransmission") ("FIN")
-            printf("--------->Sending packet %d %s\n", num, state.c_str());
+            printf("-->Sending packet %d %s\n", num, state.c_str());
         else    // num = -1, SYN
-            printf("--------->Sending packet %s\n", state.c_str());
+            printf("-->Sending packet %s\n", state.c_str());
     }
     else if (!action.compare("receive"))
-        printf("-------------->Receiving packet %d\n", num);
+        printf("--->Receiving packet %d\n", num);
     else
         fprintf(stderr, "error input.");
 }
@@ -167,7 +167,7 @@ void process_regular_packet(Packet& pkt){
     while (!output.empty()){
         Packet temp(output);
         received_data += temp.get_content();
-        printf("\n%s\n\n", temp.get_content().c_str());
+        //printf("\n%s\n\n", temp.get_content().c_str());
         /*
         std::ofstream myfile("received.data", std::ios::out | std::ios::app );
         myfile<<temp.get_content();

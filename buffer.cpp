@@ -19,14 +19,14 @@ void Buffer::setBaseSeq(short seqnum){
 
 
 bool Buffer::push_in_pkt(short seqnum, std::string pkt){
-	printf("* * * * * * * * * Pushing into buffer --- seqnum %d   exp_seq %d   W+B %d\n", seqnum, expected_seq, WINDOWSIZE+ BUFF_SIZE);
+	//printf("* * * * * * * * * Pushing into buffer --- seqnum %d   exp_seq %d   W+B %d\n", seqnum, expected_seq, WINDOWSIZE+ BUFF_SIZE);
 	if ((seqnum < expected_seq && expected_seq - seqnum < WINDOWSIZE+ BUFF_SIZE)
 		|| (seqnum > expected_seq && seqnum - expected_seq  > WINDOWSIZE + BUFF_SIZE)){//a retransmitted duplicate pkt, consider over flow
-		printf("* * * * * * * * * Return false, reason 1\n");
+		//printf("* * * * * * * * * Return false, reason 1\n");
 		return false;					//for client just drop the duplicate and return false to notice
 	}
 	else if (find_seq(seqnum) != pkt_buffer.end()){	//duplicate pkt in buffer
-		printf("* * * * * * * * * Return false, reason 1\n");
+		//printf("* * * * * * * * * Return false, reason 1\n");
 		return false;
 	}
 	else if (seqnum == expected_seq){		//a delivered in order pkt
@@ -42,7 +42,7 @@ bool Buffer::push_in_pkt(short seqnum, std::string pkt){
 		temp.pkt = pkt;
 		pkt_buffer.push_back(temp);
 	}
-	printf("* * * * * * * * * Return true\n");
+	//printf("* * * * * * * * * Return true\n");
 	return true;
 }
 
@@ -51,7 +51,7 @@ std::string Buffer::drop_packet(){
 	std::list<struct pkt>::iterator it;
 	//printf("1: %d ----- %d\n", last_expected_to_drop_seq, expected_seq);
 	it = find_seq(last_expected_to_drop_seq);
-	printf("%d ----- %d\n", last_expected_to_drop_seq, expected_seq);
+	//printf("%d ----- %d\n", last_expected_to_drop_seq, expected_seq);
 
 	if (it != pkt_buffer.end()){
 		result = it->pkt;
@@ -60,7 +60,7 @@ std::string Buffer::drop_packet(){
 		
 		it = find_seq(last_expected_to_drop_seq);
 		int is_erased = (it == pkt_buffer.end());
-		printf(">>>>>>>>Is erased????? %d\n", is_erased);
+		//printf(">>>>>>>>Is erased????? %d\n", is_erased);
 		
 
 		last_expected_to_drop_seq = (last_expected_to_drop_seq + result.length()) % MAXSEQNUM;
