@@ -47,7 +47,7 @@ std::string Buffer::drop_packet(){
 	std::list<struct pkt>::iterator it;
 	//printf("1: %d ----- %d\n", last_expected_to_drop_seq, expected_seq);
 	it = find_seq(last_expected_to_drop_seq);
-	//printf("%d ----- %d\n", last_expected_to_drop_seq, expected_seq);
+	printf("%d ----- %d\n", last_expected_to_drop_seq, expected_seq);
 
 	if (it != pkt_buffer.end()){
 		result = it->pkt;
@@ -55,7 +55,7 @@ std::string Buffer::drop_packet(){
 
 		it = find_seq(last_expected_to_drop_seq);
 		int is_erased = (it == pkt_buffer.end());
-		//printf(">>>>>>>>Is erased????? %d\n", is_erased);
+		printf(">>>>>>>>Is erased????? %d\n", is_erased);
 
 
 		last_expected_to_drop_seq = (last_expected_to_drop_seq + result.length()) % MAXSEQNUM;
