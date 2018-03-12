@@ -24,6 +24,8 @@ bool Buffer::push_in_pkt(short seqnum, std::string pkt){
 	if ((seqnum < expected_seq && expected_seq - seqnum < WINDOWSIZE+ BUFF_SIZE)
 		|| (seqnum > expected_seq && seqnum - expected_seq  > WINDOWSIZE + BUFF_SIZE))//a retransmitted duplicate pkt, consider over flow
 		return false;					//for client just drop the duplicate and return false to notice
+	else if (find_seq(seqnum) != pkt_buffer.end())	//duplicate pkt in buffer
+		return false;
 	else if (seqnum == expected_seq){		//a delivered in order pkt
 		struct pkt temp;
 		temp.seq = seqnum;
