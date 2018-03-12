@@ -30,6 +30,7 @@ Buffer pkt_buffer(WINDOWSIZE/BUFF_SIZE);
 std::string filename;
 int sockfd = -1;
 bool dup_flag = false;
+std::string received_data = "";
 
 void error(char *msg)
 {
@@ -165,9 +166,12 @@ void process_regular_packet(Packet& pkt){
     std::string output = pkt_buffer.drop_packet();
     while (!output.empty()){
         Packet temp(output);
+        received_data += temp.get_content();
+        /*
         std::ofstream myfile("received.data", std::ios::out | std::ios::app );
         myfile<<temp.get_content();
         myfile.close();
+        */
         output = pkt_buffer.drop_packet();
     }
 }
@@ -227,6 +231,9 @@ void process_packet (Packet& pkt){
     else if (pkt.getFINbit()){
         //ignore duplicate packets
         //if (dup_flag) return;
+        std::ofstream myfile("received.data");
+        myfile<<received_data;
+        myfile.close();
 
         response.setFINbit(true);
         response.setACK(pkt.getSEQ());
