@@ -23,6 +23,7 @@
 #include "buffer.h"
 
 const short SYN_Seq = 0;
+short Server_SYN_Seq;
 
 //global SeqNum buffer: Seq is received from server, ack back the same number
 Buffer pkt_buffer(WINDOWSIZE/BUFF_SIZE);
@@ -149,8 +150,8 @@ void process_regular_packet(Packet& pkt){
     int buff_size;
 
     //receive first pkt, delete timer for REQ
-    if (pkt.getSEQ() == 8){
-        std::unordered_map<short, struct my_timer>::iterator it = pkt_timer.find(pkt.getSEQ());
+    if (pkt.getSEQ() == Server_SYN_Seq + HEADER_SIZE){
+        std::unordered_map<short, struct my_timer>::iterator it = pkt_timer.find(SYN_Seq + HEADER_SIZE);
         if (it != pkt_timer.end()) {   //get the ACK, delete the timer
             timer_delete((it->second).id);
             pkt_timer.erase(it);
@@ -193,7 +194,7 @@ void process_packet (Packet& pkt){
     //// need to buffer this packet, if lost, need timeout to retransmit ////
     if (pkt.getSYNbit()){
         //delete the timer at receiving time
-        std::unordered_map<short, struct my_timer>::iterator it = pkt_timer.find(pkt.getSEQ());
+        std::unordered_map<short, struct my_timer>::iterator it = pkt_timer.find(SYN_Seq);
         if (it != pkt_timer.end()) {   //get the ACK, delete the timer
             timer_delete((it->second).id);
             pkt_timer.erase(it);
@@ -203,10 +204,11 @@ void process_packet (Packet& pkt){
 
         if (pkt.getACK() == SYN_Seq){
             //set base seq for upcoming file pkts
-            pkt_buffer.setBaseSeq(pkt.getSEQ()+ HEADER_SIZE);
+            Server_SYN_Seq = pkt.getSEQ();
+            pkt_buffer.setBaseSeq(Server_SYN_Seq + HEADER_SIZE);
 
             response.setACK(pkt.getSEQ());
-            response.setSEQ(HEADER_SIZE);
+            response.setSEQ(SYN_Seq + HEADER_SIZE);
             response.setREQbit(true);
             response.fillin_content(filename);
             buffer = response.packet_to_string();
