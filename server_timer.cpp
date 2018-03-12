@@ -292,13 +292,12 @@ void process_packet (Packet& pkt, struct sockaddr_in src_addr, socklen_t addrlen
     //if (pkt.getACK() < Pre_seq || pkt.getACK() > Pre_seq + WINDOWSIZE) return;
 
     //delete the timer at receiving time
-    //do not setup timer for SYN process at server, client do that
-    if (!pkt.getSYNbit()){
-        std::unordered_map<short, struct my_timer>::iterator it = pkt_timer.find(pkt.getACK());
-        if (it != pkt_timer.end()) {   //get the ACK, delete the timer
-            timer_delete((it->second).id);
-            pkt_timer.erase(it);
-        }
+    std::unordered_map<short, struct my_timer>::iterator it;
+    if (pkt.getSYNbit()) it = pkt_timer.find(pkt.getSEQ());
+    else it = pkt_timer.find(pkt.getACK());
+    if (it != pkt_timer.end()) {   //get the ACK, delete the timer
+        timer_delete((it->second).id);
+        pkt_timer.erase(it);
     }
 
     Packet response;
@@ -315,12 +314,11 @@ void process_packet (Packet& pkt, struct sockaddr_in src_addr, socklen_t addrlen
         buff_size = buffer.length();
         sendto(sockfd, buffer.c_str(), buff_size, 0, (struct sockaddr*)&src_addr, addrlen);
 
-        /* 
         //set the timer, and add it to the list
         short seqnum = response.getSEQ();
         pkt_timer[seqnum] = my_timer(seqnum, response, src_addr, addrlen);
         makeTimer(&pkt_timer[seqnum], TIMEOUT);
-        */
+    
 
         if (Max_seq != 0) //duplicate SYN
             printmessage("send", "Retransmission SYN", response.getSEQ());

@@ -149,15 +149,6 @@ void process_regular_packet(Packet& pkt){
     std::string buffer;
     int buff_size;
 
-    //receive first pkt, delete timer for REQ
-    if (pkt.getSEQ() == Server_SYN_Seq + HEADER_SIZE){
-        std::unordered_map<short, struct my_timer>::iterator it = pkt_timer.find(SYN_Seq + HEADER_SIZE);
-        if (it != pkt_timer.end()) {   //get the ACK, delete the timer
-            timer_delete((it->second).id);
-            pkt_timer.erase(it);
-        }
-    }
-
     response.setACK(pkt.getSEQ());
     buffer = response.packet_to_string();
     buff_size = buffer.length();
@@ -215,10 +206,12 @@ void process_packet (Packet& pkt){
             buff_size = buffer.length();
             write(sockfd, buffer.c_str(), buff_size);
 
+            /*
             //set the timer, and add it to the list
             short seqnum = response.getSEQ();
             pkt_timer[seqnum] = my_timer(seqnum, response);
             makeTimer(&pkt_timer[seqnum], TIMEOUT);
+            */
             
             if (dup_flag) //We have received SYN before
                 printmessage("send", "Retransmission", response.getACK());
