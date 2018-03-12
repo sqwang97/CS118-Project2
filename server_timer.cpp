@@ -292,7 +292,7 @@ void process_packet (Packet& pkt, struct sockaddr_in src_addr, socklen_t addrlen
     //if (pkt.getACK() < Pre_seq || pkt.getACK() > Pre_seq + WINDOWSIZE) return;
 
     //delete the timer at receiving time
-    //do not setup timer for SYN at server, client do that
+    //do not setup timer for SYN process at server, client do that
     if (!pkt.getSYNbit()){
         std::unordered_map<short, struct my_timer>::iterator it = pkt_timer.find(pkt.getACK());
         if (it != pkt_timer.end()) {   //get the ACK, delete the timer
