@@ -65,9 +65,11 @@ static void timer_handler(int sig, siginfo_t *si, void *uc) {
     Packet pkt = timer_data->pkt;
     std::string buffer = pkt.packet_to_string();
 
+    printf(" .-.-.-.-.-.-.-.-.-  hey here\n");
     //2*RTO timeout for FIN
     if (pkt.getFINbit())
     {
+        printf(" .-.-.-.-.-.-.-.-.-  I'm inside now !!!\n");
         close(sockfd);
         exit(1);
         //close connection
@@ -246,6 +248,7 @@ void process_packet (Packet& pkt){
         
         
         //set the timer, and add it to the list
+        printf(" .-.-.-.-.-.-.-.-.-  Setting timer\n");
         short seqnum = response.getSEQ();
         pkt_timer[seqnum] = my_timer(seqnum, response);
         makeTimer(&pkt_timer[seqnum], 2*TIMEOUT);
