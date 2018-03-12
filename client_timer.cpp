@@ -203,17 +203,20 @@ void process_packet (Packet& pkt){
             buffer = response.packet_to_string();
             buff_size = buffer.length();
             write(sockfd, buffer.c_str(), buff_size);
-            dup_flag = true; //We have received SYN 
 
+            /*
             //set the timer, and add it to the list
             short seqnum = response.getSEQ();
             pkt_timer[seqnum] = my_timer(seqnum, response);
             makeTimer(&pkt_timer[seqnum], TIMEOUT);
+            */
             
             if (dup_flag) //We have received SYN before
                 printmessage("send", "Retransmission", response.getACK());
             else
                 printmessage("send", "", response.getACK());
+
+            dup_flag = true; //We have received SYN 
         }
     }
 
