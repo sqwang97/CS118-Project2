@@ -167,7 +167,7 @@ void process_regular_packet(Packet& pkt){
     while (!output.empty()){
         Packet temp(output);
         received_data += temp.get_content();
-        printf("\n%s\n\n", temp.get_content().c_str());
+        //printf("\n%s\n\n", temp.get_content().c_str());
         /*
         std::ofstream myfile("received.data", std::ios::out | std::ios::app );
         myfile<<temp.get_content();
