@@ -50,6 +50,12 @@ std::string Buffer::drop_packet(){
 	if (it != pkt_buffer.end()){
 		result = it->pkt;
 		pkt_buffer.erase(it);
+
+		it = find_seq(last_expected_to_drop_seq);
+		int is_erased = (it == pkt_buffer.end());
+		printf(">>>>>>>>Is erased????? %d\n", is_erased);
+
+
 		last_expected_to_drop_seq = (last_expected_to_drop_seq + result.length()) % MAXSEQNUM;
 		//set expected_seq if the droped packet is out of order
 
