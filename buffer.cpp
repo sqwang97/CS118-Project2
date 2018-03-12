@@ -45,7 +45,7 @@ std::string Buffer::drop_packet(){
 	std::list<struct pkt>::iterator it;
 	//printf("1: %d ----- %d\n", last_expected_to_drop_seq, expected_seq);
 	it = find_seq(last_expected_to_drop_seq);
-	//printf("2: %d ----- %d\n", last_expected_to_drop_seq, expected_seq);
+	printf("%d ----- %d\n", last_expected_to_drop_seq, expected_seq);
 
 	if (it != pkt_buffer.end()){
 		result = it->pkt;
@@ -56,7 +56,6 @@ std::string Buffer::drop_packet(){
         	expected_seq = std::min(expected_seq, last_expected_to_drop_seq);
     	else
         	expected_seq = std::max(expected_seq, last_expected_to_drop_seq);
-		printf("%d ----- %d\n", last_expected_to_drop_seq, expected_seq);
 		return result;
 	}
 	return "";
