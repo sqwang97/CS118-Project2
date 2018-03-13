@@ -2,21 +2,13 @@ Chenyu Xu 204584747
 Shiqi Wang 304582601
 
 File description:
-server.c: source code of the server
+buffer.cpp: for data buffer use of client
+buffer.h: related header file
+packet.cpp: the design of our packet header and payload
+packet.h: related header file
 Makefile: for creating a shell script for running and tar ball, including dist and clean method
+client.cpp: source code of the client side, which receives the file
+server.cpp: source code of the server side, which sends the file
 report.pdf: the report for this project
 README: some basic information, including both students, of the tar ball
-error.html: the 404 page for file not found
-do not support.html: the error page for non-supportive file
 
-server: recvfrom & sendto; using fseek & fread to read certain bytes of the file
-client: read & write
-
-
-
-client: send SYN packet with request file name in data
-server: while reading SYN, get file name, find file
-	if exists, send first 1012 bytes SEQ (setting SEQ and ACK)
-	if not exists, send 404 ERR
-client: if receiving ERR, send FIN
-		if receiving SEQ, send ACK = SEQ + 1
