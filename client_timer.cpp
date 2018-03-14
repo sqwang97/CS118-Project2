@@ -49,9 +49,11 @@ struct my_timer {
     timer_t id;
     short seqnum;
     Packet pkt;
-
+    struct sockaddr_in src_addr;
+    socklen_t addrlen;
+    
     my_timer() {}
-    my_timer(short seq, Packet mpkt): seqnum(seq), pkt(mpkt){}
+    my_timer(short seq, Packet mpkt, struct sockaddr_in src, socklen_t len): seqnum(seq), pkt(mpkt), src_addr(src), addrlen(len) {}
 };
 
 std::unordered_map<short, struct my_timer> pkt_timer;
@@ -64,6 +66,8 @@ static void timer_handler(int sig, siginfo_t *si, void *uc) {
     short seqnum = timer_data->seqnum;
     Packet pkt = timer_data->pkt;
     std::string buffer = pkt.packet_to_string();
+    struct sockaddr_in src_addr = timer_data->src_addr;
+    socklen_t addrlen = timer_data->addrlen;
 
     //2*RTO timeout for FIN
     if (pkt.getFINbit())
@@ -74,7 +78,7 @@ static void timer_handler(int sig, siginfo_t *si, void *uc) {
     }
 
 
-    write(sockfd, buffer.c_str(), buffer.length());
+    sendto(sockfd, buffer.c_str(), buff_size, 0, (struct sockaddr*)&src_addr, addrlen);
     if (pkt.getSYNbit())
         printmessage("send", "Retransmission SYN", seqnum);
     else
@@ -84,7 +88,7 @@ static void timer_handler(int sig, siginfo_t *si, void *uc) {
     timer_delete(timer_data->id);
 
     //set the timer, and add it to the list
-    pkt_timer[seqnum] = my_timer(seqnum, pkt);
+    pkt_timer[seqnum] = my_timer(seqnum, pkt, src_addr, addrlen);
     makeTimer(&pkt_timer[seqnum], TIMEOUT);
 }
 
@@ -145,7 +149,7 @@ void printmessage(std::string action, std::string state, short num){
 /*
 send back an ack pkt
 */
-void process_regular_packet(Packet& pkt){
+void process_regular_packet(Packet& pkt, struct sockaddr_in src_addr, socklen_t addrlen){
     Packet response;
     std::string buffer;
     int buff_size;
@@ -153,7 +157,7 @@ void process_regular_packet(Packet& pkt){
     response.setACK(pkt.getSEQ());
     buffer = response.packet_to_string();
     buff_size = buffer.length();
-    write(sockfd, buffer.c_str(), buff_size);
+    sendto(sockfd, buffer.c_str(), buff_size, 0, (struct sockaddr*)&src_addr, addrlen);
 
     if (pkt_buffer.push_in_pkt(pkt.getSEQ(), pkt.packet_to_string())){
         //printf("%s\n", (pkt.get_content()).c_str());
@@ -177,7 +181,7 @@ void process_regular_packet(Packet& pkt){
     }
 }
 
-void process_packet (Packet& pkt){
+void process_packet (Packet& pkt, struct sockaddr_in src_addr, socklen_t addrlen){
     printmessage("receive", "", pkt.getSEQ() );
 
 
@@ -209,7 +213,7 @@ void process_packet (Packet& pkt){
             response.fillin_content(filename);
             buffer = response.packet_to_string();
             buff_size = buffer.length();
-            write(sockfd, buffer.c_str(), buff_size);
+            sendto(sockfd, buffer.c_str(), buff_size, 0, (struct sockaddr*)&src_addr, addrlen);
 
             /*
             //set the timer, and add it to the list
@@ -241,13 +245,13 @@ void process_packet (Packet& pkt){
         response.setSEQ(2*HEADER_SIZE);
         buffer = response.packet_to_string();
         buff_size = buffer.length();
-        write(sockfd, buffer.c_str(), buff_size);
+        sendto(sockfd, buffer.c_str(), buff_size, 0, (struct sockaddr*)&src_addr, addrlen);
         dup_flag = true; //We have received FIN
         
         
         //set the timer, and add it to the list
         short seqnum = response.getSEQ();
-        pkt_timer[seqnum] = my_timer(seqnum, response);
+        pkt_timer[seqnum] = my_timer(seqnum, response, src_addr, addrlen);
         makeTimer(&pkt_timer[seqnum], 2*TIMEOUT);
         
 
@@ -276,6 +280,7 @@ int main(int argc, char *argv[])
 {
     int portno;
     struct sockaddr_in serv_addr;
+    socklen_t serv_len;
     struct hostent *server;
     char* hostname;
 
@@ -306,9 +311,10 @@ int main(int argc, char *argv[])
     serv_addr.sin_family = AF_INET;
     memmove((char *)&serv_addr.sin_addr.s_addr, (char *)server->h_addr, server->h_length);
     serv_addr.sin_port = htons(portno);
+    serv_len = sizeof(serv_addr);
 
-    if (connect(sockfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0)
-        error((char *)"ERROR connecting to server");
+    //if (connect(sockfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0)
+        //error((char *)"ERROR connecting to server");
 
 
 //////////////////
@@ -329,12 +335,15 @@ int main(int argc, char *argv[])
     std::string syn_string = syn.packet_to_string();
     //write(STDOUT_FILENO, syn_string.c_str(). syn_string.size());
     printmessage("send", "SYN", syn.getSEQ());
-    write(sockfd, syn_string.c_str(), syn_string.length());
+    sendto(sockfd, syn_string.c_str(), syn_string.length(), 0, (struct sockaddr*)&serv_addr, serv_len);
 
     //set the timer, and add it to the list
     short seqnum = syn.getSEQ();
-    pkt_timer[seqnum] = my_timer(seqnum, syn);
+    pkt_timer[seqnum] = my_timer(seqnum, syn, serv_addr, serv_len);
     makeTimer(&pkt_timer[seqnum], TIMEOUT);
+
+    struct sockaddr_in src_addr;
+    socklen_t addrlen = sizeof(src_addr);
 
     while(1)
     {
@@ -346,8 +355,7 @@ int main(int argc, char *argv[])
 
             if (pfd[0].revents & POLLIN)
             {
-                int read_bytes = read(sockfd, buffer, BUFF_SIZE);
-                
+                int read_bytes = recvfrom(sockfd, buffer, BUFF_SIZE, 0, (struct sockaddr*)&src_addr, &addrlen);                
                 if (read_bytes < 0)
                 {
                     fprintf(stderr, "Read from socket fails. Error: %s\n", strerror(errno));
@@ -371,7 +379,7 @@ int main(int argc, char *argv[])
                     for (int i = 0; i < read_bytes; i++)
                         conv += buffer[i];
                     Packet temp(conv);
-                    process_packet(temp);
+                    process_packet(temp, src_addr, addrlen);
                     memset(buffer, 0, BUFF_SIZE);  // reset memory after one request
                 }
 
