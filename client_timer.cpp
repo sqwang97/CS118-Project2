@@ -78,7 +78,7 @@ static void timer_handler(int sig, siginfo_t *si, void *uc) {
     }
 
 
-    sendto(sockfd, buffer.c_str(), buff_size, 0, (struct sockaddr*)&src_addr, addrlen);
+    sendto(sockfd, buffer.c_str(), buffer.length(), 0, (struct sockaddr*)&src_addr, addrlen);
     if (pkt.getSYNbit())
         printmessage("send", "Retransmission SYN", seqnum);
     else
@@ -270,7 +270,7 @@ void process_packet (Packet& pkt, struct sockaddr_in src_addr, socklen_t addrlen
     }
     else{
         dup_flag = false;
-        process_regular_packet(pkt);
+        process_regular_packet(pkt, src_addr, addrlen);
     }
 
 }
