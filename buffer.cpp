@@ -60,19 +60,9 @@ std::string Buffer::drop_packet(){
 		
 		it = find_seq(last_expected_to_drop_seq);
 		int is_erased = (it == pkt_buffer.end());
-		//printf(">>>>>>>>Is erased????? %d\n", is_erased);
-		
 
 		last_expected_to_drop_seq = (last_expected_to_drop_seq + result.length()) % MAXSEQNUM;
 		//set expected_seq if the droped packet is out of order
-
-		/*
-		if ((expected_seq > last_expected_to_drop_seq && expected_seq - last_expected_to_drop_seq > WINDOWSIZE + BUFF_SIZE))
-		 	|| (last_expected_to_drop_seq > expected_seq && last_expected_to_drop_seq - expected_seq > WINDOWSIZE + BUFF_SIZE))  //consider overflow
-        	expected_seq = std::min(expected_seq, last_expected_to_drop_seq);
-    	else
-        	expected_seq = std::max(expected_seq, last_expected_to_drop_seq);
-        */
         if (last_expected_to_drop_seq != expected_seq){
         	expected_seq = last_expected_to_drop_seq;
         }
