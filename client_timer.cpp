@@ -30,6 +30,7 @@ Buffer pkt_buffer(WINDOWSIZE/BUFF_SIZE);
 std::string filename;
 int sockfd = -1;
 bool dup_flag = false;
+int close_flag = 10;
 std::string received_data = "";
 
 void error(char *msg)
@@ -69,18 +70,23 @@ static void timer_handler(int sig, siginfo_t *si, void *uc) {
     struct sockaddr_in src_addr = timer_data->src_addr;
     socklen_t addrlen = timer_data->addrlen;
 
-    //2*RTO timeout for FIN
-    if (pkt.getFINbit())
+    //10*RTO timeout for FIN
+    if (pkt.getFINbit() && !close_flag) 
     {
         close(sockfd);
         exit(1);
         //close connection
     }
+    else if (pkt.getFINbit()){
+        close_flag--;
+    }
 
 
     sendto(sockfd, buffer.c_str(), buffer.length(), 0, (struct sockaddr*)&src_addr, addrlen);
     if (pkt.getSYNbit())
-        printmessage("send", "Retransmission SYN", seqnum);
+        printmessage("send", "Retransmission SYN", -1);
+    else if (pkt.getFINbit())
+        printmessage("send", "Retransmission FIN", seqnum);
     else
         printmessage("send", "Retransmission", seqnum);
 
@@ -135,7 +141,7 @@ num: seq or ack
 */
 void printmessage(std::string action, std::string state, short num){
     if (!action.compare("send")){
-        if (state != "SYN" && state != "Retransmission SYN")    //ACK ("Retransmission") ("FIN")
+        if (num != -1)    //ACK ("Retransmission") ("FIN")
             printf("-->Sending packet %d %s\n", num, state.c_str());
         else    // num = -1, SYN
             printf("-->Sending packet %s\n", state.c_str());
@@ -231,14 +237,18 @@ void process_packet (Packet& pkt, struct sockaddr_in src_addr, socklen_t addrlen
         }
     }
 
-    //receive FIN from server, send FIN and ACK to server
-    //// close connection for 2RTO ////
+    //receive FIN from server, send FIN-ACK + FIN to server
+    //// close connection for 10RTO ////
     else if (pkt.getFINbit()){
-        //ignore duplicate packets
-        //if (dup_flag) return;
-        std::ofstream myfile("received.data");
-        myfile<<received_data;
-        myfile.close();
+        //reset the timeout value
+        close_flag = 10;
+
+        //ignore when duplicate packets
+        if (!dup_flag){
+            std::ofstream myfile("received.data");
+            myfile<<received_data;
+            myfile.close();
+        }
 
         response.setFINbit(true);
         response.setACK(pkt.getSEQ());
@@ -252,14 +262,13 @@ void process_packet (Packet& pkt, struct sockaddr_in src_addr, socklen_t addrlen
         //set the timer, and add it to the list
         short seqnum = response.getSEQ();
         pkt_timer[seqnum] = my_timer(seqnum, response, src_addr, addrlen);
-        makeTimer(&pkt_timer[seqnum], 2*TIMEOUT);
+        makeTimer(&pkt_timer[seqnum], TIMEOUT);
         
 
         //If it is a 404 error, we print additional message
         if (pkt.getERRbit())
             printf("404 Not Found\n");
         printmessage("send", "FIN", response.getACK());
-        //close connection for 2RTO
     }
 
     //receive REQ from server, close connection
@@ -334,7 +343,7 @@ int main(int argc, char *argv[])
     syn.setSEQ(SYN_Seq);
     std::string syn_string = syn.packet_to_string();
     //write(STDOUT_FILENO, syn_string.c_str(). syn_string.size());
-    printmessage("send", "SYN", syn.getSEQ());
+    printmessage("send", "SYN", -1);
     sendto(sockfd, syn_string.c_str(), syn_string.length(), 0, (struct sockaddr*)&serv_addr, serv_len);
 
     //set the timer, and add it to the list

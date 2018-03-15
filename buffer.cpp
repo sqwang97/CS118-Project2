@@ -73,8 +73,9 @@ std::string Buffer::drop_packet(){
     	else
         	expected_seq = std::max(expected_seq, last_expected_to_drop_seq);
         */
-        if (last_expected_to_drop_seq != expected_seq)
+        if (last_expected_to_drop_seq != expected_seq){
         	expected_seq = last_expected_to_drop_seq;
+        }
 		return result;
 	}
 	return "";

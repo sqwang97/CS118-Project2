@@ -34,6 +34,8 @@ unsigned long file_data_size = 0;
 unsigned long data_offset = 0;
 
 int sockfd = -1;
+bool isFIN = false;
+int close_flag = 10;
 
 short Max_seq = 0;
 short Pre_seq = 0;
@@ -62,6 +64,16 @@ std::unordered_map<short, struct my_timer> pkt_timer;
 static void timer_handler(int sig, siginfo_t *si, void *uc) {
     struct my_timer *timer_data = (my_timer*)si->si_value.sival_ptr;
 
+    if (isFIN && pkt.getFINbit() && !close_flag){
+        close(sockfd);
+        exit(1);
+        //close connection
+    }
+    else if (isFIN && pkt.getFINbit()){
+        close_flag--;
+    }
+
+
     //retransmission data
     short seqnum = timer_data->seqnum;
     Packet pkt = timer_data->pkt;
@@ -71,7 +83,7 @@ static void timer_handler(int sig, siginfo_t *si, void *uc) {
     sendto(sockfd, buffer.c_str(), buffer.length(), 0, (struct sockaddr*)&src_addr, addrlen);
     if (pkt.getSYNbit())
         printmessage("send", "Retransmission SYN", seqnum);
-    else if (pkt.getFINbit())
+    else if (!isFIN && pkt.getFINbit())
         printmessage("send", "Retransmission FIN", seqnum);
     else
         printmessage("send", "Retransmission", seqnum);
@@ -340,8 +352,13 @@ void process_packet (Packet& pkt, struct sockaddr_in src_addr, socklen_t addrlen
             sendto(sockfd, buffer.c_str(), buff_size, 0, (struct sockaddr*)&src_addr, addrlen);
             printmessage("send", "", response.getSEQ());
             Max_seq = (Max_seq + HEADER_SIZE) % MAXSEQNUM;    //// do we need this? ////
-            close(sockfd);
-            exit(1);
+
+            //set the timer, and add it to the list
+            short seqnum = response.getSEQ();
+            pkt_timer[seqnum] = my_timer(seqnum, response, src_addr, addrlen);
+            makeTimer(&pkt_timer[seqnum], TIMEOUT);
+
+            isFIN = true;
         }
     }
 
