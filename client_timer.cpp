@@ -256,6 +256,11 @@ void process_packet (Packet& pkt, struct sockaddr_in src_addr, socklen_t addrlen
         buffer = response.packet_to_string();
         buff_size = buffer.length();
         sendto(sockfd, buffer.c_str(), buff_size, 0, (struct sockaddr*)&src_addr, addrlen);
+        if (dup_flag)
+            printmessage("send", "Retransmission FIN", response.getACK());
+        else 
+            printmessage("send", "FIN", response.getACK());
+
         dup_flag = true; //We have received FIN
         
         
@@ -268,7 +273,6 @@ void process_packet (Packet& pkt, struct sockaddr_in src_addr, socklen_t addrlen
         //If it is a 404 error, we print additional message
         if (pkt.getERRbit())
             printf("404 Not Found\n");
-        printmessage("send", "FIN", response.getACK());
     }
 
     //receive REQ from server, close connection
