@@ -142,12 +142,12 @@ num: seq or ack
 void printmessage(std::string action, std::string state, short num){
     if (!action.compare("send")){
         if (num != -1)    //ACK ("Retransmission") ("FIN")
-            printf("-->Sending packet %d %s\n", num, state.c_str());
+            printf("Sending packet %d %s\n", num, state.c_str());
         else    // num = -1, SYN
-            printf("-->Sending packet %s\n", state.c_str());
+            printf("Sending packet %s\n", state.c_str());
     }
     else if (!action.compare("receive"))
-        printf("--->Receiving packet %d\n", num);
+        printf("Receiving packet %d\n", num);
     else
         fprintf(stderr, "error input.");
 }
