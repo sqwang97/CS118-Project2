@@ -6,9 +6,8 @@ buffer.cpp: for data buffer use of client
 buffer.h: related header file
 packet.cpp: the design of our packet header and payload
 packet.h: related header file
-Makefile: for creating a shell script for running and tar ball, including dist and clean method
-client.cpp: source code of the client side, which receives the file
-server.cpp: source code of the server side, which sends the file
+Makefile: shell script for executables build and tar ball, including dist and clean method
+client_timer.cpp: source code of the client side, which receives the file
+server_timer.cpp: source code of the server side, which sends the file
 report.pdf: the report for this project
-README: some basic information, including both students, of the tar ball
-
+README: include basic information, including student's name and UID, and content in the tar ball
