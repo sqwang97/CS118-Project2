@@ -69,12 +69,12 @@ static void timer_handler(int sig, siginfo_t *si, void *uc) {
     Packet pkt = timer_data->pkt;
 
     printf("<---------- Get Here --------------> isFIN: %d, close_flag: %d\n", (int)isFIN, close_flag);
-    if (isFIN && pkt.getFINbit() && !close_flag){
+    if (pkt.getREQbit() && !close_flag){
         close(sockfd);
         exit(1);
         //close connection and exit
     }
-    else if (isFIN && pkt.getFINbit()){
+    else if (pkt.getREQbit()){
         close_flag--;
     }
 
@@ -84,7 +84,7 @@ static void timer_handler(int sig, siginfo_t *si, void *uc) {
     sendto(sockfd, buffer.c_str(), buffer.length(), 0, (struct sockaddr*)&src_addr, addrlen);
     if (pkt.getSYNbit())
         printmessage("send", "Retransmission SYN", seqnum);
-    else if (!isFIN && pkt.getFINbit())
+    else if (pkt.getFINbit())
         printmessage("send", "Retransmission FIN", seqnum);
     else
         printmessage("send", "Retransmission", seqnum);
