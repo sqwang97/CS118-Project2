@@ -75,20 +75,20 @@ static void timer_handler(int sig, siginfo_t *si, void *uc) {
     {
         close(sockfd);
         exit(1);
-        //close connection
+        //close connection and exit
     }
     else if (pkt.getFINbit()){
         close_flag--;
     }
-
-
-    sendto(sockfd, buffer.c_str(), buffer.length(), 0, (struct sockaddr*)&src_addr, addrlen);
-    if (pkt.getSYNbit())
-        printmessage("send", "Retransmission SYN", -1);
-    else if (pkt.getFINbit())
-        printmessage("send", "Retransmission FIN", seqnum);
-    else
-        printmessage("send", "Retransmission", seqnum);
+    else{
+        sendto(sockfd, buffer.c_str(), buffer.length(), 0, (struct sockaddr*)&src_addr, addrlen);
+        if (pkt.getSYNbit())
+            printmessage("send", "Retransmission SYN", -1);
+        else if (pkt.getFINbit())
+            printmessage("send", "Retransmission FIN", seqnum);
+        else
+            printmessage("send", "Retransmission", seqnum);
+    }
 
     //delete current timer    
     timer_delete(timer_data->id);

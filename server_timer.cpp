@@ -68,15 +68,16 @@ static void timer_handler(int sig, siginfo_t *si, void *uc) {
     short seqnum = timer_data->seqnum;
     Packet pkt = timer_data->pkt;
 
+    printf("<---------- Get Here --------------> isFIN: %d, close_flag: %d\n", (int)isFIN, close_flag);
     if (isFIN && pkt.getFINbit() && !close_flag){
         close(sockfd);
         exit(1);
-        //close connection
+        //close connection and exit
     }
     else if (isFIN && pkt.getFINbit()){
         close_flag--;
     }
-    
+
     std::string buffer = pkt.packet_to_string();
     struct sockaddr_in src_addr = timer_data->src_addr;
     socklen_t addrlen = timer_data->addrlen;
