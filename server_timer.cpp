@@ -64,6 +64,10 @@ std::unordered_map<short, struct my_timer> pkt_timer;
 static void timer_handler(int sig, siginfo_t *si, void *uc) {
     struct my_timer *timer_data = (my_timer*)si->si_value.sival_ptr;
 
+    //retransmission data
+    short seqnum = timer_data->seqnum;
+    Packet pkt = timer_data->pkt;
+
     if (isFIN && pkt.getFINbit() && !close_flag){
         close(sockfd);
         exit(1);
@@ -72,11 +76,7 @@ static void timer_handler(int sig, siginfo_t *si, void *uc) {
     else if (isFIN && pkt.getFINbit()){
         close_flag--;
     }
-
-
-    //retransmission data
-    short seqnum = timer_data->seqnum;
-    Packet pkt = timer_data->pkt;
+    
     std::string buffer = pkt.packet_to_string();
     struct sockaddr_in src_addr = timer_data->src_addr;
     socklen_t addrlen = timer_data->addrlen;
